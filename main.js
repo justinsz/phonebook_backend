@@ -32,15 +32,21 @@ app.get('/api/persons/:id', (req, res, next) => {
 })
 
 app.delete('/api/persons/:id', (req, res, next) => {
+  console.log('Deleting person with ID:', req.params.id)
   Person.findByIdAndRemove(req.params.id)
-    .then(() => {
+    .then(result => {
+      console.log('Delete result:', result)
       res.status(204).end()
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.error('Error deleting person:', error)
+      next(error)
+    })
 })
 
 app.post('/api/persons', (req, res, next) => {
   const body = req.body
+  console.log('Creating new person:', body)
   
   if (!body.name || !body.number) {
     return res.status(400).json({ 
@@ -55,13 +61,18 @@ app.post('/api/persons', (req, res, next) => {
   
   person.save()
     .then(savedPerson => {
+      console.log('Person saved:', savedPerson)
       res.json(savedPerson)
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.error('Error saving person:', error)
+      next(error)
+    })
 })
 
 app.put('/api/persons/:id', (req, res, next) => {
   const { name, number } = req.body
+  console.log('Updating person with ID:', req.params.id, { name, number })
   
   Person.findByIdAndUpdate(
     req.params.id, 
@@ -69,9 +80,13 @@ app.put('/api/persons/:id', (req, res, next) => {
     { new: true, runValidators: true, context: 'query' }
   )
     .then(updatedPerson => {
+      console.log('Update result:', updatedPerson)
       res.json(updatedPerson)
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.error('Error updating person:', error)
+      next(error)
+    })
 })
 
 // Info page
@@ -93,7 +108,7 @@ app.get('*', (req, res) => {
 
 // Error handling middleware
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message)
+  console.error('Error handler:', error.message)
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
@@ -107,7 +122,7 @@ const errorHandler = (error, request, response, next) => {
 app.use(errorHandler)
 
 // Define PORT
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
