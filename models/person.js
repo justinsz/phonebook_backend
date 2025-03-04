@@ -21,12 +21,21 @@ mongoose.connect(url)
 const personSchema = new mongoose.Schema({
   name: {
     type: String,
-    minLength: 3,
-    required: true
+    minLength: [3, 'Name must be at least 3 characters long'],
+    required: [true, 'Name is required']
   },
   number: {
     type: String,
-    required: true
+    required: [true, 'Phone number is required'],
+    validate: {
+      validator: function(v) {
+        // Phone number validation:
+        // - Must be at least 8 characters
+        // - Must have format: 2-3 digits, hyphen, rest of the numbers
+        return /^(\d{2,3})-(\d+)$/.test(v) && v.length >= 8;
+      },
+      message: props => `${props.value} is not a valid phone number! Format should be XX-XXXXXXX or XXX-XXXXXXX with at least 8 characters total.`
+    }
   }
 })
 
