@@ -13,10 +13,12 @@ app.use(express.static('dist')) // Serve static files from dist folder
 app.use(morgan('tiny'))
 
 // Routes
-app.get('/api/persons', (req, res) => {
-  Person.find({}).then(persons => {
-    res.json(persons)
-  })
+app.get('/api/persons', (req, res, next) => {
+  Person.find({})
+    .then(persons => {
+      res.json(persons)
+    })
+    .catch(error => next(error))
 })
 
 app.get('/api/persons/:id', (req, res, next) => {
@@ -25,7 +27,21 @@ app.get('/api/persons/:id', (req, res, next) => {
       if (person) {
         res.json(person)
       } else {
-        res.status(404).end()
+        res.status(404).json({ error: 'person not found' })
+      }
+    })
+    .catch(error => next(error))
+})
+
+// New endpoint to find a person by name
+app.get('/api/persons/name/:name', (req, res, next) => {
+  const name = req.params.name
+  Person.findOne({ name: name })
+    .then(person => {
+      if (person) {
+        res.json(person)
+      } else {
+        res.status(404).json({ error: 'person not found' })
       }
     })
     .catch(error => next(error))
@@ -40,36 +56,41 @@ app.delete('/api/persons/:id', (req, res, next) => {
       console.log('Delete result:', result)
       res.status(204).end()
     })
-    .catch(error => {
-      console.error('Error deleting person:', error)
-      next(error)
-    })
+    .catch(error => next(error))
 })
 
 app.post('/api/persons', (req, res, next) => {
   const body = req.body
   console.log('Creating new person:', body)
-  
+
   if (!body.name || !body.number) {
     return res.status(400).json({ 
       error: 'name or number missing' 
     })
   }
-  
-  const person = new Person({
-    name: body.name,
-    number: body.number,
-  })
-  
-  person.save()
+
+  // First check if a person with this name already exists
+  Person.findOne({ name: body.name })
+    .then(existingPerson => {
+      if (existingPerson) {
+        // Person exists, update their number
+        console.log('Person exists, updating number')
+        existingPerson.number = body.number
+        return existingPerson.save()
+      } else {
+        // Create a new person
+        const person = new Person({
+          name: body.name,
+          number: body.number,
+        })
+        return person.save()
+      }
+    })
     .then(savedPerson => {
-      console.log('Person saved:', savedPerson)
+      console.log('Person saved/updated:', savedPerson)
       res.json(savedPerson)
     })
-    .catch(error => {
-      console.error('Error saving person:', error)
-      next(error)
-    })
+    .catch(error => next(error))
 })
 
 app.put('/api/persons/:id', (req, res, next) => {
@@ -93,23 +114,23 @@ app.put('/api/persons/:id', (req, res, next) => {
       if (updatedPerson) {
         res.json(updatedPerson)
       } else {
-        res.status(404).json({ error: 'Person not found' })
+        res.status(404).json({ error: 'person not found' })
       }
     })
-    .catch(error => {
-      console.error('Error updating person:', error)
-      next(error)
-    })
+    .catch(error => next(error))
 })
 
 // Info page
 app.get('/info', (req, res, next) => {
   Person.countDocuments({})
     .then(count => {
-      res.send(`
-        <p>Phonebook has info for ${count} people</p>
-        <p>${new Date()}</p>
-      `)
+      const infoHtml = `
+        <div>
+          <p>Phonebook has info for ${count} people</p>
+          <p>${new Date()}</p>
+        </div>
+      `
+      res.send(infoHtml)
     })
     .catch(error => next(error))
 })
@@ -119,6 +140,13 @@ app.get('*', (req, res) => {
   res.sendFile('dist/index.html', { root: __dirname })
 })
 
+// Unknown endpoint middleware
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
+
 // Error handling middleware
 const errorHandler = (error, request, response, next) => {
   console.error('Error handler:', error.message)
@@ -127,6 +155,8 @@ const errorHandler = (error, request, response, next) => {
     return response.status(400).send({ error: 'malformatted id' })
   } else if (error.name === 'ValidationError') {
     return response.status(400).json({ error: error.message })
+  } else if (error.name === 'MongoServerError' && error.code === 11000) {
+    return response.status(400).json({ error: 'name must be unique' })
   }
 
   next(error)

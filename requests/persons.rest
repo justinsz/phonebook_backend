@@ -1,0 +1,32 @@
+### Get all persons
+GET http://localhost:3001/api/persons
+
+### Get info
+GET http://localhost:3001/info
+
+### Get one person by ID (replace with a valid ID)
+GET http://localhost:3001/api/persons/5c42336b0303b2e44071dc4f
+
+### Get person by name
+GET http://localhost:3001/api/persons/name/Arto%20Hellas
+
+### Create a new person
+POST http://localhost:3001/api/persons
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "number": "040-1234567"
+}
+
+### Update a person (replace with a valid ID)
+PUT http://localhost:3001/api/persons/5c42336b0303b2e44071dc4f
+Content-Type: application/json
+
+{
+  "name": "Arto Hellas",
+  "number": "040-2345823"
+}
+
+### Delete a person (replace with a valid ID)
+DELETE http://localhost:3001/api/persons/5c42336b0303b2e44071dc4f 
