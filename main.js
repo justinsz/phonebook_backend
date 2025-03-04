@@ -32,8 +32,10 @@ app.get('/api/persons/:id', (req, res, next) => {
 })
 
 app.delete('/api/persons/:id', (req, res, next) => {
-  console.log('Deleting person with ID:', req.params.id)
-  Person.findByIdAndRemove(req.params.id)
+  const id = req.params.id
+  console.log('Deleting person with ID:', id)
+  
+  Person.findByIdAndRemove(id)
     .then(result => {
       console.log('Delete result:', result)
       res.status(204).end()
