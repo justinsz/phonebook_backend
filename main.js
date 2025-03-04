@@ -9,8 +9,13 @@ app.use(express.json())
 app.use(express.static('dist')) // Serve static files from dist folder
 app.use(morgan('tiny'))
 
-// Get data from a file for now (later you might use a database)
-let persons = require('./db.json').persons
+// Get data from a file for now
+let persons = [
+  { name: 'Arto Hellas', number: '040-123456', id: '1' },
+  { name: 'Ada Lovelace', number: '39-44-5323523', id: '2' },
+  { name: 'Dan Abramov', number: '12-43-234345', id: '3' },
+  { name: 'Mary Poppendieck', number: '39-23-6423122', id: '4' }
+]
 
 // Routes
 app.get('/api/persons', (req, res) => {
@@ -92,6 +97,11 @@ app.get('/info', (req, res) => {
     <p>Phonebook has info for ${persons.length} people</p>
     <p>${new Date()}</p>
   `)
+})
+
+// For Render deployment - serve the frontend for any other routes
+app.get('*', (req, res) => {
+  res.sendFile('dist/index.html', { root: __dirname })
 })
 
 // Define PORT
