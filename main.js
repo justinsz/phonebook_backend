@@ -72,16 +72,27 @@ app.post('/api/persons', (req, res, next) => {
 
 app.put('/api/persons/:id', (req, res, next) => {
   const { name, number } = req.body
-  console.log('Updating person with ID:', req.params.id, { name, number })
-  
+  console.log('Updating person with ID:', req.params.id)
+  console.log('New data:', { name, number })
+
+  // Make sure we're not sending _id in the update
+  const updateData = {
+    name: name,
+    number: number
+  }
+
   Person.findByIdAndUpdate(
     req.params.id, 
-    { name, number }, 
+    updateData, 
     { new: true, runValidators: true, context: 'query' }
   )
     .then(updatedPerson => {
-      console.log('Update result:', updatedPerson)
-      res.json(updatedPerson)
+      console.log('Updated person:', updatedPerson)
+      if (updatedPerson) {
+        res.json(updatedPerson)
+      } else {
+        res.status(404).json({ error: 'Person not found' })
+      }
     })
     .catch(error => {
       console.error('Error updating person:', error)
